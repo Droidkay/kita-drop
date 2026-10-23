@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kita Clips</title>
+<meta name="description" content="A shared clipboard for your devices. Create or join a room and every clip appears on all of them.">
+<meta name="theme-color" content="#0b1020">
+<link rel="icon" type="image/svg+xml" href="../icon.svg">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="stylesheet" href="../style.css?v=4">
+<link rel="stylesheet" href="clips.css?v=1">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h4"/></svg></i>Kita Clips</div>
+    <div class="spacer"></div>
+    <span class="chip" id="net"><span class="dot"></span><span id="netTxt">Connecting…</span></span>
+    <button class="iconbtn" id="inviteBtn" title="Rooms" aria-label="Rooms">＋</button>
+  </header>
+
+  <div class="layout">
+  <div class="col">
+    <section class="card compose">
+      <textarea id="box" rows="3" placeholder="Type or paste something to share with your other devices…"></textarea>
+      <div class="row2">
+        <button class="btn" id="sendBtn">Share clip</button>
+        <button class="btn ghost" id="pasteBtn">Paste from clipboard</button>
+      </div>
+      <label class="switch inline"><input type="checkbox" id="auto"><span></span><div><b>Auto-capture when I return to this tab</b><small>Shares whatever you last copied. The browser will ask for clipboard permission.</small></div></label>
+      <p class="mini" id="peerLine">No other devices in this room yet.</p>
+    </section>
+
+    <div class="listbar">
+      <input id="search" type="search" placeholder="Search clips" autocomplete="off">
+      <button class="linkbtn" id="clearBtn">Clear all</button>
+    </div>
+    <section id="clips" class="clips"></section>
+    <p class="hint hidden" id="empty">Nothing here yet. Share a clip, or copy something on another device in this room.</p>
+  </div>
+
+  <aside class="connect card">
+    <h3>Rooms</h3>
+    <div class="cmount"></div>
+    <p class="fine">🔒 Clips go straight from device to device. The relay only helps devices find each other. History is kept on each device only.</p>
+    <p class="fine"><a href="../">Need to send files? Kita Drop →</a></p>
+  </aside>
+  </div>
+</div>
+
+<div class="modal" id="roomModal"><div class="sheet">
+  <h2>Rooms</h2>
+  <p class="mute">Create a room and share its QR code or code, or join someone else's room.</p>
+  <div class="cmount"></div>
+  <div class="row2" style="margin-top:14px"><button class="btn" id="roomDone">Done</button></div>
+</div></div>
+
+<template id="tplConnect">
+  <div class="seg2"><button data-tab="share" class="on">Create / share</button><button data-tab="join">Join a room</button></div>
+  <div class="pane-share">
+    <div class="qr"></div>
+    <div class="roomcode"></div>
+    <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-newroom">New room</button></div>
+  </div>
+  <div class="pane-join hidden">
+    <label class="lbl">Room code from the other device</label>
+    <input class="codein" type="text" maxlength="8" placeholder="e.g. K7QM2" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn js-join">Join room</button>
+    <p class="fine">Tip: you can also just scan the other device's QR code with your camera.</p>
+  </div>
+</template>
+
+<div class="toast" id="toast"></div>
+<script src="../vendor/mqtt.min.js?v=4"></script>
+<script src="../vendor/qrcode.js?v=4"></script>
+<script src="clips.js?v=1"></script>
+</body>
+</html>

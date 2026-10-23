@@ -1,0 +1,18 @@
+.compose textarea{width:100%;resize:vertical;min-height:84px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;margin-bottom:10px}
+.compose textarea:focus{outline:2px solid var(--a)}
+.compose .row2{display:flex;gap:10px}.compose .row2 .btn{flex:1}
+.switch.inline{margin-top:12px}
+.mini{font-size:12.5px;color:var(--mute);margin:10px 0 0}
+.listbar{display:flex;align-items:center;gap:10px;margin:16px 0 8px}
+.listbar input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit}
+.listbar .linkbtn{margin:0;white-space:nowrap}
+.clip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px}
+.clip.pin{border-color:var(--a)}
+.clip .meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);margin-bottom:6px}
+.clip .meta b{color:var(--text)}
+.clip .body{white-space:pre-wrap;word-break:break-word;max-height:150px;overflow:auto;font-size:14.5px}
+.clip .body a{color:var(--a)}
+.clip .acts{display:flex;gap:8px;margin-top:10px}
+.clip .acts button{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.clip .acts button.p{background:linear-gradient(135deg,var(--a),var(--b));color:#fff;border:0}
+.fine a{color:var(--a)}
