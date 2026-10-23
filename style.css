@@ -98,3 +98,14 @@ textarea{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line)
   .hint{font-size:16px}
 }
 .peer .drop{font-size:11.5px;color:var(--mute);margin-top:8px}
+
+.seg2{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:3px;margin:0 0 12px}
+.seg2 button{flex:1;border:0;background:none;color:var(--mute);font:inherit;font-size:13px;font-weight:700;padding:9px 6px;border-radius:11px;cursor:pointer}
+.seg2 button.on{background:var(--card);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.25)}
+.pane-join{padding:6px 0 4px}
+.lbl{display:block;font-size:12.5px;color:var(--mute);font-weight:600;margin-bottom:8px}
+.codein{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;font-size:26px;font-weight:800;letter-spacing:7px;text-align:center;text-transform:uppercase;margin-bottom:12px}
+.codein::placeholder{letter-spacing:2px;font-size:15px;font-weight:600;color:var(--mute)}
+.codein:focus{outline:2px solid var(--a);outline-offset:1px}
+.pane-join .btn{width:100%}
+.linkbtn{background:none;border:0;color:var(--a);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:6px 0;display:block;margin:8px auto 0}

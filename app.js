@@ -425,13 +425,41 @@ function openRoom(){ renderInvite(); $("nearby").checked = nearbyOn; $("roomModa
 $("inviteBtn").onclick = openRoom;
 $("roomDone").onclick = () => $("roomModal").classList.remove("open");
 $("roomModal").addEventListener("click", e => { if (e.target.id === "roomModal") $("roomModal").classList.remove("open"); });
-document.querySelectorAll(".js-copy").forEach(b => { b.onclick = async () => { try { await navigator.clipboard.writeText(inviteUrl()); toast("Link copied"); } catch(e){ toast(inviteUrl()); } }; });
-document.querySelectorAll(".js-more").forEach(b => { b.onclick = openRoom; });
-document.querySelectorAll(".js-newroom").forEach(b => { b.onclick = () => {
-  announce("bye"); codeRoom = rnd(5); LS.set("kd_room", codeRoom);
-  for (const [id, p] of peers) if (!p.nearby) { if (!(p.link && p.link.open)) peers.delete(id); }
+function switchRoom(code){
+  const old = codeRoom;
+  announce("bye");
+  for (const c of clients) if (c.connected && old !== code) c.unsubscribe(NS + "/r/" + old);
+  codeRoom = code; LS.set("kd_room", codeRoom);
+  for (const [id, p] of peers) if (!(p.link && p.link.open)) peers.delete(id);
   subscribeRooms(); announce("hello"); renderPeers(); renderInvite(); updateNet();
-}; });
+}
+function joinFromInput(box){
+  const inp = box.querySelector(".codein");
+  const v = (inp.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (v.length < 4) { toast("Enter the room code (4 to 8 letters or numbers)"); inp.focus(); return; }
+  switchRoom(v); inp.value = "";
+  box.querySelector('[data-tab="share"]').click();
+  $("roomModal").classList.remove("open");
+  toast("Joined room " + codeRoom);
+}
+document.querySelectorAll(".cmount").forEach(box => {
+  box.appendChild($("tplConnect").content.cloneNode(true));
+  const tabs = box.querySelectorAll("[data-tab]");
+  tabs.forEach(t => t.onclick = () => {
+    tabs.forEach(x => x.classList.toggle("on", x === t));
+    box.querySelector(".pane-share").classList.toggle("hidden", t.dataset.tab !== "share");
+    box.querySelector(".pane-join").classList.toggle("hidden", t.dataset.tab !== "join");
+    if (t.dataset.tab === "join") setTimeout(() => box.querySelector(".codein").focus(), 50);
+  });
+  box.querySelector(".js-copy").onclick = async () => { try { await navigator.clipboard.writeText(inviteUrl()); toast("Link copied"); } catch(e){ toast(inviteUrl()); } };
+  box.querySelector(".js-newroom").onclick = () => { switchRoom(rnd(5)); toast("New room " + codeRoom + " created"); };
+  box.querySelector(".js-join").onclick = () => joinFromInput(box);
+  const inp = box.querySelector(".codein");
+  inp.addEventListener("input", () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") joinFromInput(box); });
+});
+document.querySelectorAll(".js-more").forEach(b => { b.onclick = openRoom; });
+
 $("nearby").onchange = async e => {
   nearbyOn = e.target.checked; LS.set("kd_nearby", nearbyOn ? "1" : "0");
   if (nearbyOn) { const r = await resolveNearby(); if (!r) { toast("Couldn't work out your network. Check your internet."); nearbyOn = false; e.target.checked = false; LS.set("kd_nearby", "0"); return; } subscribeRooms(); announce("hello"); }

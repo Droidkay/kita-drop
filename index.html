@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kita Drop">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div class="wrap">
@@ -42,15 +42,14 @@
   </div>
 
   <aside class="connect card">
-    <h3>Connect a device</h3>
+    <h3>Rooms</h3>
+    <div class="cmount"></div>
     <ol class="steps">
-      <li><b>Open</b> <span class="u">drop.kitatool.com</span> on your phone, tablet or other computer.</li>
-      <li><b>Scan</b> this code with its camera, or type the room code.</li>
+      <li><b>Open</b> <span class="u">drop.kitatool.com</span> on your other device.</li>
+      <li><b>Scan</b> the QR code, or choose <b>Join a room</b> and type the code.</li>
       <li><b>Tap</b> the device that appears, then pick files or send text.</li>
     </ol>
-    <div class="qr"></div>
-    <div class="roomcode"></div>
-    <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-more">More</button></div>
+    <button class="linkbtn js-more">Auto-find devices on my network…</button>
     <p class="fine">🔒 Files go straight from device to device over your Wi-Fi. They are never uploaded to a server.</p>
   </aside>
   </div>
@@ -75,20 +74,33 @@
 
 <!-- Invite / room -->
 <div class="modal" id="roomModal"><div class="sheet">
-  <h2>Connect another device</h2>
-  <p class="mute">On the other device, open this link or scan the code. Both must have this page open.</p>
-  <div class="qr"></div>
-  <div class="roomcode"></div>
-  <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-newroom">New room</button></div>
+  <h2>Rooms</h2>
+  <p class="mute">Create a room and share its QR code or code, or join someone else's room.</p>
+  <div class="cmount"></div>
   <label class="switch"><input type="checkbox" id="nearby"><span></span><div><b>Find devices on my network automatically</b><small id="nearbyNote">Shows other devices using the same internet connection. On shared connections (Starlink, mobile data, office Wi-Fi) other people may appear. Nobody can send you anything unless you tap Accept.</small></div></label>
   <div class="row2" style="margin-top:14px"><button class="btn" id="roomDone">Done</button></div>
 </div></div>
 
+<template id="tplConnect">
+  <div class="seg2"><button data-tab="share" class="on">Create / share</button><button data-tab="join">Join a room</button></div>
+  <div class="pane-share">
+    <div class="qr"></div>
+    <div class="roomcode"></div>
+    <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-newroom">New room</button></div>
+  </div>
+  <div class="pane-join hidden">
+    <label class="lbl">Room code from the other device</label>
+    <input class="codein" type="text" inputmode="text" maxlength="8" placeholder="e.g. K7QM2" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="btn js-join">Join room</button>
+    <p class="fine">Tip: you can also just scan the other device's QR code with your camera.</p>
+  </div>
+</template>
+
 <div class="toast" id="toast"></div>
 <div class="dropveil" id="veil">Drop files on a device</div>
 
-<script src="vendor/mqtt.min.js?v=3"></script>
-<script src="vendor/qrcode.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="vendor/mqtt.min.js?v=4"></script>
+<script src="vendor/qrcode.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

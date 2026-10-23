@@ -9,7 +9,7 @@ Send files and text between phones, tablets and computers on the same Wi-Fi. Run
 
 ## Use it
 1. Open `drop.kitatool.com` on both devices.
-2. On one, tap **+** and scan the QR or open the link on the other (or turn on "Find devices on my network").
+2. On one device you already have a room (QR + code). On the other, scan the QR, or tap **Join a room** and type the code. **New room** makes a fresh one.
 3. Tap the other device to send a file, or **Send text** for links and notes. The receiver taps Accept.
 4. Optional: Add to Home Screen (iPhone Safari: Share, Add to Home Screen; Android or desktop Chrome: Install).
 
