@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kita Drop</title>
+<meta name="description" content="Send files and text between your phone, tablet and computer over your Wi-Fi. No install, no account.">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kita Drop">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></i>Kita Drop</div>
+    <div class="spacer"></div>
+    <span class="chip" id="net"><span class="dot"></span><span id="netTxt">Connecting…</span></span>
+    <button class="iconbtn" id="inviteBtn" title="Invite another device" aria-label="Invite">＋</button>
+  </header>
+
+  <section class="radar" id="radar">
+    <div class="rings"><i></i><i></i><i></i></div>
+    <div class="me" id="meBtn" role="button" tabindex="0" title="Tap to rename this device">
+      <div class="avatar" id="meIcon">💻</div>
+      <div class="meName" id="meName">—</div>
+      <div class="meSub">This device · tap to rename</div>
+    </div>
+  </section>
+
+  <section id="peers" class="peers"></section>
+  <p class="hint" id="hint">Open <b id="hintUrl">this page</b> on your other devices, on the same Wi-Fi, and they'll appear here.</p>
+
+  <section class="panel hidden" id="xferPanel"><h3>Transfers</h3><div id="xfers"></div></section>
+  <section class="panel hidden" id="recvPanel"><h3>Received</h3><div id="recvs"></div></section>
+</div>
+
+<input type="file" id="picker" multiple hidden>
+
+<!-- Incoming request -->
+<div class="modal" id="incoming"><div class="sheet">
+  <div class="big" id="inIcon">📥</div>
+  <h2 id="inTitle">Incoming</h2>
+  <p id="inBody" class="mute"></p>
+  <div class="row2"><button class="btn ghost" id="inNo">Decline</button><button class="btn" id="inYes">Accept</button></div>
+</div></div>
+
+<!-- Send text -->
+<div class="modal" id="textModal"><div class="sheet">
+  <h2 id="textTitle">Send text</h2>
+  <textarea id="textIn" rows="5" placeholder="Type or paste text or a link…"></textarea>
+  <div class="row2"><button class="btn ghost" id="textCancel">Cancel</button><button class="btn" id="textSend">Send</button></div>
+</div></div>
+
+<!-- Invite / room -->
+<div class="modal" id="roomModal"><div class="sheet">
+  <h2>Connect another device</h2>
+  <p class="mute">On the other device, open this link or scan the code. Both must have this page open.</p>
+  <div class="qr" id="qr"></div>
+  <div class="roomcode" id="roomCode"></div>
+  <div class="row2"><button class="btn ghost" id="copyInvite">Copy link</button><button class="btn ghost" id="newRoom">New room</button></div>
+  <label class="switch"><input type="checkbox" id="nearby"><span></span><div><b>Find devices on my network automatically</b><small id="nearbyNote">Shows other devices using the same internet connection. On shared connections (Starlink, mobile data, office Wi-Fi) other people may appear. Nobody can send you anything unless you tap Accept.</small></div></label>
+  <div class="row2" style="margin-top:14px"><button class="btn" id="roomDone">Done</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<div class="dropveil" id="veil">Drop files on a device</div>
+
+<script src="vendor/mqtt.min.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
