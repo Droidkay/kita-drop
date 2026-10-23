@@ -372,13 +372,14 @@ function renderPeers(){
   const box = $("peers"); box.innerHTML = "";
   const list = [...peers.values()].sort((a, b) => a.name.localeCompare(b.name));
   $("hint").classList.toggle("hidden", list.length > 0);
+  document.body.classList.toggle("has-peers", list.length > 0);
   for (const p of list) {
     const el = document.createElement("div"); el.className = "peer"; el.dataset.id = p.id;
-    el.innerHTML = '<span class="tag"></span><div class="avatar"></div><b></b><div class="st"></div><button class="tbtn">Send text</button>';
+    el.innerHTML = '<span class="tag"></span><div class="avatar"></div><b></b><div class="st"></div><div class="drop">Tap or drop files here</div><button class="tbtn">Send text</button>';
     el.querySelector(".tag").textContent = p.nearby ? "nearby" : "";
     el.querySelector(".avatar").textContent = ICON[p.type] || "💻";
     el.querySelector("b").textContent = p.name;
-    const st = el.querySelector(".st"); st.textContent = p.status || (p.link && p.link.open ? "Connected · tap to send a file" : "Tap to send a file"); if (p.status) st.classList.add("live");
+    const st = el.querySelector(".st"); st.textContent = p.status || (p.link && p.link.open ? "Connected" : "Ready"); if (p.status) st.classList.add("live");
     el.onclick = e => { if (e.target.closest(".tbtn")) return; pickFor = p; $("picker").value = ""; $("picker").click(); };
     el.querySelector(".tbtn").onclick = () => { textFor = p; $("textTitle").textContent = "Send text to " + p.name; $("textIn").value = ""; $("textModal").classList.add("open"); setTimeout(() => $("textIn").focus(), 50); };
     el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("drag"); });
@@ -414,20 +415,23 @@ $("meBtn").onclick = () => {
 
 /* invite / room */
 function inviteUrl(){ return location.origin + location.pathname + "?r=" + codeRoom; }
-function openRoom(){
-  $("roomCode").textContent = codeRoom;
-  try { const q = qrcode(0, "M"); q.addData(inviteUrl()); q.make(); $("qr").innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch(e){ $("qr").textContent = ""; }
-  $("nearby").checked = nearbyOn; $("roomModal").classList.add("open");
+function renderInvite(){
+  let svg = "";
+  try { const q = qrcode(0, "M"); q.addData(inviteUrl()); q.make(); svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch(e){}
+  document.querySelectorAll(".qr").forEach(e => { e.innerHTML = svg; });
+  document.querySelectorAll(".roomcode").forEach(e => { e.textContent = codeRoom; });
 }
+function openRoom(){ renderInvite(); $("nearby").checked = nearbyOn; $("roomModal").classList.add("open"); }
 $("inviteBtn").onclick = openRoom;
 $("roomDone").onclick = () => $("roomModal").classList.remove("open");
 $("roomModal").addEventListener("click", e => { if (e.target.id === "roomModal") $("roomModal").classList.remove("open"); });
-$("copyInvite").onclick = async () => { try { await navigator.clipboard.writeText(inviteUrl()); toast("Link copied"); } catch(e){ toast(inviteUrl()); } };
-$("newRoom").onclick = () => {
+document.querySelectorAll(".js-copy").forEach(b => { b.onclick = async () => { try { await navigator.clipboard.writeText(inviteUrl()); toast("Link copied"); } catch(e){ toast(inviteUrl()); } }; });
+document.querySelectorAll(".js-more").forEach(b => { b.onclick = openRoom; });
+document.querySelectorAll(".js-newroom").forEach(b => { b.onclick = () => {
   announce("bye"); codeRoom = rnd(5); LS.set("kd_room", codeRoom);
   for (const [id, p] of peers) if (!p.nearby) { if (!(p.link && p.link.open)) peers.delete(id); }
-  subscribeRooms(); announce("hello"); renderPeers(); openRoom(); updateNet();
-};
+  subscribeRooms(); announce("hello"); renderPeers(); renderInvite(); updateNet();
+}; });
 $("nearby").onchange = async e => {
   nearbyOn = e.target.checked; LS.set("kd_nearby", nearbyOn ? "1" : "0");
   if (nearbyOn) { const r = await resolveNearby(); if (!r) { toast("Couldn't work out your network. Check your internet."); nearbyOn = false; e.target.checked = false; LS.set("kd_nearby", "0"); return; } subscribeRooms(); announce("hello"); }
@@ -436,7 +440,7 @@ $("nearby").onchange = async e => {
 
 /* ---------------------------------------------------------------- start */
 (async function init(){
-  renderMe(); renderPeers();
+  renderMe(); renderPeers(); renderInvite();
   $("hintUrl").textContent = location.host + (location.pathname.replace(/\/$/, "") || "");
   if (nearbyOn) await resolveNearby();
   startBrokers(); updateNet();

@@ -23,6 +23,8 @@
     <button class="iconbtn" id="inviteBtn" title="Invite another device" aria-label="Invite">＋</button>
   </header>
 
+  <div class="layout">
+  <div class="col">
   <section class="radar" id="radar">
     <div class="rings"><i></i><i></i><i></i></div>
     <div class="me" id="meBtn" role="button" tabindex="0" title="Tap to rename this device">
@@ -33,10 +35,25 @@
   </section>
 
   <section id="peers" class="peers"></section>
-  <p class="hint" id="hint">Open <b id="hintUrl">this page</b> on your other devices, on the same Wi-Fi, and they'll appear here.</p>
+  <p class="hint" id="hint">Waiting for another device… open <b id="hintUrl">this page</b> on it and scan the code.</p>
 
   <section class="panel hidden" id="xferPanel"><h3>Transfers</h3><div id="xfers"></div></section>
   <section class="panel hidden" id="recvPanel"><h3>Received</h3><div id="recvs"></div></section>
+  </div>
+
+  <aside class="connect card">
+    <h3>Connect a device</h3>
+    <ol class="steps">
+      <li><b>Open</b> <span class="u">drop.kitatool.com</span> on your phone, tablet or other computer.</li>
+      <li><b>Scan</b> this code with its camera, or type the room code.</li>
+      <li><b>Tap</b> the device that appears, then pick files or send text.</li>
+    </ol>
+    <div class="qr"></div>
+    <div class="roomcode"></div>
+    <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-more">More</button></div>
+    <p class="fine">🔒 Files go straight from device to device over your Wi-Fi. They are never uploaded to a server.</p>
+  </aside>
+  </div>
 </div>
 
 <input type="file" id="picker" multiple hidden>
@@ -60,9 +77,9 @@
 <div class="modal" id="roomModal"><div class="sheet">
   <h2>Connect another device</h2>
   <p class="mute">On the other device, open this link or scan the code. Both must have this page open.</p>
-  <div class="qr" id="qr"></div>
-  <div class="roomcode" id="roomCode"></div>
-  <div class="row2"><button class="btn ghost" id="copyInvite">Copy link</button><button class="btn ghost" id="newRoom">New room</button></div>
+  <div class="qr"></div>
+  <div class="roomcode"></div>
+  <div class="row2"><button class="btn ghost js-copy">Copy link</button><button class="btn ghost js-newroom">New room</button></div>
   <label class="switch"><input type="checkbox" id="nearby"><span></span><div><b>Find devices on my network automatically</b><small id="nearbyNote">Shows other devices using the same internet connection. On shared connections (Starlink, mobile data, office Wi-Fi) other people may appear. Nobody can send you anything unless you tap Accept.</small></div></label>
   <div class="row2" style="margin-top:14px"><button class="btn" id="roomDone">Done</button></div>
 </div></div>

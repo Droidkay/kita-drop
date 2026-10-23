@@ -75,3 +75,26 @@ textarea{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line)
 .toast.show{transform:translate(-50%,0);opacity:1}
 .dropveil{position:fixed;inset:10px;border:3px dashed var(--a);border-radius:26px;background:rgba(90,176,255,.1);display:none;place-items:center;font-size:22px;font-weight:800;z-index:15;pointer-events:none}
 .dropveil.on{display:grid}
+
+.layout{display:grid;gap:16px;grid-template-columns:1fr}
+.col{min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}
+.connect h3{margin:0 0 10px;font-size:12.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mute)}
+.steps{margin:0 0 6px;padding-left:20px;color:var(--mute);font-size:14px}
+.steps li{margin:7px 0}.steps b{color:var(--text)}.steps .u{color:var(--a);font-weight:700}
+.fine{font-size:12px;color:var(--mute);margin:14px 0 0;text-align:center}
+.connect .qr svg{width:200px;height:200px}
+.connect .roomcode{font-size:26px}
+@media (max-width:899px){body.has-peers .connect{display:none}}
+@media (min-width:900px){
+  .wrap{max-width:1080px}
+  .layout{grid-template-columns:1fr 340px;align-items:start;gap:22px;margin-top:6px}
+  .connect{position:sticky;top:18px}
+  #inviteBtn{display:none}
+  .radar{height:300px}
+  .peers{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .peer{padding:22px 14px 16px}
+  .peer .avatar{width:72px;height:72px;font-size:32px}
+  .hint{font-size:16px}
+}
+.peer .drop{font-size:11.5px;color:var(--mute);margin-top:8px}
