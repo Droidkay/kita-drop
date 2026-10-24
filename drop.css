@@ -161,3 +161,10 @@ textarea:focus{outline:0;border-color:var(--a)}
   .peer b{font-size:15px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+
+.bell{padding:10px 11px}
+.bell.on{color:var(--a);border-color:var(--a)}
+.bell.on:after{content:"";position:absolute;margin:-14px 0 0 12px;width:8px;height:8px;border-radius:50%;background:var(--ok);border:2px solid var(--surface)}
+.bell.attn{animation:ringbell 2.4s ease-in-out infinite}
+@keyframes ringbell{0%,70%,100%{transform:rotate(0)}74%{transform:rotate(14deg)}78%{transform:rotate(-12deg)}82%{transform:rotate(9deg)}86%{transform:rotate(-6deg)}90%{transform:rotate(0)}}
+.bell{position:relative}

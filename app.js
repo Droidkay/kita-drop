@@ -123,7 +123,7 @@ function touchPeer(m){
 function onSignal(topic, m){
   if (m.id === me.id || m.from === me.id) return;
   switch (m.t) {
-    case "hello": { const p = touchPeer(m); if (p) { pub(NS + "/s/" + m.id, { t: "here", id: me.id, name: me.name, type: me.type, room: m.room }); renderPeers(); } break; }
+    case "hello": { const isNew = !peers.has(m.id); const p = touchPeer(m); if (p && isNew && document.hidden) notify(p.name + " joined your room", "Open Kita Drop to send files", "kd-join"); if (p) { pub(NS + "/s/" + m.id, { t: "here", id: me.id, name: me.name, type: me.type, room: m.room }); renderPeers(); } break; }
     case "here": { if (touchPeer(m)) renderPeers(); break; }
     case "bye": { const p = peers.get(m.id); if (p && !(p.link && p.link.open)) { peers.delete(m.id); renderPeers(); } break; }
     case "offer": case "answer": case "ice": handleRtcSignal(m); break;
@@ -275,6 +275,61 @@ function handleRtcSignal(m){
 }
 function setStatus(peer, s){ peer.status = s; renderPeers(); }
 
+/* ---------------------------------------------------------------- notifications */
+let notifOn = LS.get("kd_notif", "0") === "1" && typeof Notification !== "undefined" && Notification.permission === "granted";
+const baseTitle = document.title; let flashT = null, unread = 0;
+function chime(){
+  try {
+    const ctx = chime.ctx || (chime.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx.state === "suspended") ctx.resume();
+    [[880, 0], [1320, .13]].forEach(([f, t]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0, ctx.currentTime + t); g.gain.linearRampToValueAtTime(.18, ctx.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .38);
+      o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .4);
+    });
+  } catch(e){}
+}
+function flashTitle(msg){
+  unread++; clearInterval(flashT); let on = false;
+  flashT = setInterval(() => { document.title = on ? baseTitle : "(" + unread + ") " + msg; on = !on; }, 1100);
+}
+function clearUnread(){ unread = 0; clearInterval(flashT); flashT = null; document.title = baseTitle; }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) clearUnread(); });
+addEventListener("focus", clearUnread);
+async function notify(title, body, tag){
+  chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch(e){}
+  if (!document.hidden) return;
+  flashTitle(title);
+  if (!notifOn || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const opts = { body, tag: tag || "kd", renotify: true, icon: "icon-192.png", badge: "icon-192.png", vibrate: [120, 60, 120] };
+  try {
+    const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg && reg.showNotification) { await reg.showNotification(title, opts); return; }
+  } catch(e){}
+  try { const n = new Notification(title, opts); n.onclick = () => { window.focus(); n.close(); }; } catch(e){}
+}
+function renderBell(){
+  const b = $("bellBtn"); if (!b) return;
+  b.classList.toggle("on", notifOn);
+  b.classList.toggle("attn", !notifOn && typeof Notification !== "undefined" && Notification.permission === "default");
+  b.title = notifOn ? "Notifications on" : "Turn on notifications";
+}
+$("bellBtn").onclick = async () => {
+  if (typeof Notification === "undefined") { toast("This browser doesn't support notifications. On iPhone, add Kita Drop to your Home Screen first."); return; }
+  if (notifOn) { notifOn = false; LS.set("kd_notif", "0"); renderBell(); toast("Notifications off"); return; }
+  if (Notification.permission === "denied") { toast("Notifications are blocked. Allow them in your browser's site settings."); return; }
+  const r = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  if (r === "granted") { notifOn = true; LS.set("kd_notif", "1"); renderBell(); chime(); toast("Notifications on. You'll be told when files arrive."); notifyTest(); }
+  else { renderBell(); toast("Notifications weren't allowed."); }
+};
+function notifyTest(){ try { new Notification("Kita Drop", { body: "Notifications are on.", icon: "icon-192.png" }).close(); } catch(e){} }
+
+/* keep the screen awake while a transfer runs */
+let wake = null, activeX = 0;
+async function wakeOn(){ activeX++; try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); } } catch(e){} }
+function wakeOff(){ activeX = Math.max(0, activeX - 1); if (!activeX && wake) { try { wake.release(); } catch(e){} wake = null; } }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && activeX && !wake && navigator.wakeLock) navigator.wakeLock.request("screen").then(l => { wake = l; }).catch(() => {}); });
+
 /* ---------------------------------------------------------------- incoming transfers */
 const askQueue = []; let asking = false;
 function askIncoming(link, m){ askQueue.push({ link, m }); if (!asking) nextAsk(); }
@@ -282,6 +337,7 @@ function nextAsk(){
   const item = askQueue.shift(); if (!item) { asking = false; return; }
   asking = true;
   const { link, m } = item, peer = link.peer, size = +m.size || 0;
+  notify(peer.name + " wants to send you a file", m.name + " · " + bytes(size), "kd-offer");
   const tooBig = !window.showSaveFilePicker && size > MAX_MEM;
   if (tooBig) { link.sendCtl({ k: "reject", id: m.id, reason: "Too big for this device's browser. Use Chrome or Edge on a computer to receive it." }); asking = false; nextAsk(); return; }
   $("inTitle").textContent = peer.name + " wants to send you a file";
@@ -359,15 +415,19 @@ function newXfer(dir, peer, name, size){
   const sub = row.querySelector(".sub"), bar = row.querySelector(".bar"), fill = bar.querySelector("i"), btn = row.querySelector("button");
   sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + bytes(size);
   $("xfers").prepend(row);
-  let last = 0, timer = null;
+  let last = 0, timer = null, awake = false;
   const startFly = () => {
     if (timer) return;
+    if (!awake) { awake = true; wakeOn(); }
     setRing(peer, null, true);
     const tick = () => { const pe = peerEl(peer), me_ = document.querySelector("#meBtn .av"), pa = pe && pe.querySelector(".av"); if (dir === "out") fly(me_, pa); else fly(pa, me_); };
     tick(); timer = setInterval(tick, 560);
   };
   const stop = ok => {
     clearInterval(timer); timer = null; setRing(peer, 0, false);
+    if (awake) { awake = false; wakeOff(); }
+    if (ok && dir === "in") notify("Received " + name, "From " + peer.name + " · " + bytes(size), "kd-done");
+    else if (ok && dir === "out" && document.hidden) notify("Sent " + name, "To " + peer.name, "kd-sent");
     const el = peerEl(peer); if (el && ok) { el.classList.add("done"); setTimeout(() => el.classList.remove("done"), 2200); }
   };
   const x = {
@@ -406,6 +466,7 @@ function addReceivedText(peer, text){
   if (/^https?:\/\/\S+$/.test(text.trim())) { const o = document.createElement("a"); o.className = "sm"; o.textContent = "Open"; o.href = text.trim(); o.target = "_blank"; o.rel = "noopener noreferrer"; row.appendChild(o); }
   $("recvs").prepend(row);
   toast("Text from " + peer.name);
+  notify("Text from " + peer.name, text.length > 140 ? text.slice(0, 140) + "…" : text, "kd-text");
 }
 
 /* ---------------------------------------------------------------- peers UI */
@@ -540,7 +601,7 @@ $("nearby").onchange = async e => {
 
 /* ---------------------------------------------------------------- start */
 (async function init(){
-  renderMe(); renderPeers(); renderInvite();
+  renderMe(); renderPeers(); renderInvite(); renderBell();
   $("hintUrl").textContent = location.host + (location.pathname.replace(/\/$/, "") || "");
   if (nearbyOn) await resolveNearby();
   startBrokers(); updateNet();
