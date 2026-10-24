@@ -31,7 +31,19 @@ function deviceType(){
   if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) return "phone";
   return "desktop";
 }
-const ICON = { phone: "📱", tablet: "📲", desktop: "💻" };
+const SVG = {
+  phone:  '<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.6"/><path d="M11 18.5h2"/></svg>',
+  tablet: '<svg viewBox="0 0 24 24"><rect x="4.5" y="3" width="15" height="18" rx="2.4"/><path d="M11 18h2"/></svg>',
+  desktop:'<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M2 20h20M9 16.5v3.5M15 16.5v3.5"/></svg>',
+  file:   '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>',
+  up:     '<svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  down:   '<svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  chat:   '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  check:  '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+const ICON = SVG;
+const GRADS = ["#5ab0ff,#7c5cff","#34d399,#06b6d4","#f59e0b,#ef4444","#ec4899,#8b5cf6","#22c55e,#3b82f6","#f97316,#e11d48","#14b8a6,#6366f1","#a855f7,#0ea5e9"];
+const gradFor = id => { let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return "linear-gradient(135deg," + GRADS[h % GRADS.length] + ")"; };
 const me = {
   id: LS.get("kd_id", null) || rnd(10, "abcdefghijklmnopqrstuvwxyz0123456789"),
   name: LS.get("kd_name", null) || (ADJ[Math.floor(Math.random()*ADJ.length)] + " " + ANI[Math.floor(Math.random()*ANI.length)]),
@@ -272,7 +284,7 @@ function nextAsk(){
   const { link, m } = item, peer = link.peer, size = +m.size || 0;
   const tooBig = !window.showSaveFilePicker && size > MAX_MEM;
   if (tooBig) { link.sendCtl({ k: "reject", id: m.id, reason: "Too big for this device's browser. Use Chrome or Edge on a computer to receive it." }); asking = false; nextAsk(); return; }
-  $("inIcon").textContent = "📥"; $("inTitle").textContent = peer.name + " wants to send you a file";
+  $("inTitle").textContent = peer.name + " wants to send you a file";
   $("inBody").textContent = m.name + " · " + bytes(size);
   $("incoming").classList.add("open");
   const done = () => { $("incoming").classList.remove("open"); asking = false; nextAsk(); };
@@ -321,27 +333,55 @@ async function startReceive(link, m, handle){
 }
 
 /* ---------------------------------------------------------------- transfer list UI */
+function peerEl(peer){ return document.querySelector('.peer[data-id="' + peer.id + '"]'); }
+function setRing(peer, pc, on){
+  const el = peerEl(peer); if (!el) return;
+  el.classList.toggle("busy", !!on); if (pc != null) el.style.setProperty("--p", pc);
+}
+function fly(fromEl, toEl){
+  if (!fromEl || !toEl || !fromEl.animate) return;
+  const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect();
+  const d = document.createElement("div"); d.className = "fly"; document.body.appendChild(d);
+  const x1 = a.left + a.width / 2 - 7, y1 = a.top + a.height / 2 - 7, x2 = b.left + b.width / 2 - 7, y2 = b.top + b.height / 2 - 7;
+  const an = d.animate([
+    { transform: "translate(" + x1 + "px," + y1 + "px) scale(.4)", opacity: 0 },
+    { transform: "translate(" + (x1 + (x2 - x1) * .25) + "px," + (y1 + (y2 - y1) * .25 - 16) + "px) scale(1)", opacity: 1, offset: .25 },
+    { transform: "translate(" + x2 + "px," + y2 + "px) scale(.5)", opacity: 0 }
+  ], { duration: 900, easing: "ease-in-out" });
+  an.onfinish = () => d.remove();
+}
 function newXfer(dir, peer, name, size){
   $("xferPanel").classList.remove("hidden");
   const row = document.createElement("div"); row.className = "row";
   row.innerHTML = '<div class="ic"></div><div class="meta"><div class="nm"></div><div class="sub"></div><div class="bar"><i></i></div></div><button class="sm hidden">Cancel</button>';
-  row.querySelector(".ic").textContent = dir === "out" ? "📤" : "📥";
+  row.querySelector(".ic").innerHTML = dir === "out" ? SVG.up : SVG.down;
   row.querySelector(".nm").textContent = name;
   const sub = row.querySelector(".sub"), bar = row.querySelector(".bar"), fill = bar.querySelector("i"), btn = row.querySelector("button");
   sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + bytes(size);
   $("xfers").prepend(row);
-  let last = 0;
+  let last = 0, timer = null;
+  const startFly = () => {
+    if (timer) return;
+    setRing(peer, null, true);
+    const tick = () => { const pe = peerEl(peer), me_ = document.querySelector("#meBtn .av"), pa = pe && pe.querySelector(".av"); if (dir === "out") fly(me_, pa); else fly(pa, me_); };
+    tick(); timer = setInterval(tick, 560);
+  };
+  const stop = ok => {
+    clearInterval(timer); timer = null; setRing(peer, 0, false);
+    const el = peerEl(peer); if (el && ok) { el.classList.add("done"); setTimeout(() => el.classList.remove("done"), 2200); }
+  };
   const x = {
     id: null, size, dir, cancelled: false, finished: false,
-    state(s){ sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + s; btn.classList.remove("hidden"); },
+    state(s){ sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + s; btn.classList.remove("hidden"); setRing(peer, 0, true); },
     progress(done, total, rate){
+      startFly();
       const now = performance.now(); if (now - last < 120 && done < total) return; last = now;
-      const pc = total ? Math.min(100, done / total * 100) : 0; fill.style.width = pc + "%";
+      const pc = total ? Math.min(100, done / total * 100) : 0; fill.style.width = pc + "%"; setRing(peer, pc, true);
       sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + bytes(done) + " of " + bytes(total) + " · " + bytes(rate) + "/s";
       btn.classList.remove("hidden");
     },
-    complete(s){ x.finished = true; fill.style.width = "100%"; bar.classList.add("done"); sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + s + " · " + bytes(size); btn.classList.add("hidden"); },
-    fail(msg){ if (x.finished) return; x.finished = true; bar.classList.add("fail"); sub.textContent = msg; btn.classList.add("hidden"); },
+    complete(s){ x.finished = true; fill.style.width = "100%"; bar.classList.add("done"); sub.textContent = (dir === "out" ? "To " : "From ") + peer.name + " · " + s + " · " + bytes(size); btn.classList.add("hidden"); stop(true); },
+    fail(msg){ if (x.finished) return; x.finished = true; bar.classList.add("fail"); sub.textContent = msg; btn.classList.add("hidden"); stop(false); },
     cancel(){ x.cancelled = true; }
   };
   btn.onclick = () => x.cancel();
@@ -350,7 +390,8 @@ function newXfer(dir, peer, name, size){
 function addReceivedFile(peer, name, size, url){
   $("recvPanel").classList.remove("hidden");
   const row = document.createElement("div"); row.className = "row";
-  row.innerHTML = '<div class="ic">📄</div><div class="meta"><div class="nm"></div><div class="sub"></div></div><a class="sm">Save</a>';
+  row.innerHTML = '<div class="ic"></div><div class="meta"><div class="nm"></div><div class="sub"></div></div><a class="sm">Save</a>';
+  row.querySelector(".ic").innerHTML = SVG.file;
   row.querySelector(".nm").textContent = name; row.querySelector(".sub").textContent = "From " + peer.name + " · " + bytes(size);
   const a = row.querySelector("a"); a.href = url; a.download = name;
   $("recvs").prepend(row);
@@ -358,7 +399,8 @@ function addReceivedFile(peer, name, size, url){
 function addReceivedText(peer, text){
   $("recvPanel").classList.remove("hidden");
   const row = document.createElement("div"); row.className = "row";
-  row.innerHTML = '<div class="ic">💬</div><div class="meta"><div class="sub"></div><div class="txt"></div></div><button class="sm">Copy</button>';
+  row.innerHTML = '<div class="ic"></div><div class="meta"><div class="sub"></div><div class="txt"></div></div><button class="sm">Copy</button>';
+  row.querySelector(".ic").innerHTML = SVG.chat;
   row.querySelector(".sub").textContent = "Text from " + peer.name; row.querySelector(".txt").textContent = text;
   row.querySelector("button").onclick = async () => { try { await navigator.clipboard.writeText(text); toast("Copied"); } catch(e){ toast("Press and hold the text to copy"); } };
   if (/^https?:\/\/\S+$/.test(text.trim())) { const o = document.createElement("a"); o.className = "sm"; o.textContent = "Open"; o.href = text.trim(); o.target = "_blank"; o.rel = "noopener noreferrer"; row.appendChild(o); }
@@ -368,26 +410,49 @@ function addReceivedText(peer, text){
 
 /* ---------------------------------------------------------------- peers UI */
 let pickFor = null, textFor = null;
+const peerEls = new Map();
+function layoutPeers(){
+  const st = $("stage"), n = peerEls.size; if (!st || !n) return;
+  const W = st.clientWidth, H = st.clientHeight, pw = W >= 700 ? 150 : 132;
+  const rx = Math.max(90, W / 2 - pw / 2 - 6), ry = Math.max(100, H / 2 - 72);
+  let angles;
+  if (n === 1) angles = [-90]; else if (n === 2) angles = [-140, -40]; else if (n === 3) angles = [-160, -90, -20];
+  else angles = Array.from({ length: n }, (_, i) => -90 + i * 360 / n);
+  [...peerEls.values()].forEach((el, i) => {
+    const t = angles[i] * Math.PI / 180;
+    el.style.setProperty("--x", Math.round(Math.cos(t) * rx * (n === 1 ? 0 : 1)) + "px");
+    el.style.setProperty("--y", Math.round(Math.sin(t) * ry) + "px");
+  });
+}
 function renderPeers(){
-  const box = $("peers"); box.innerHTML = "";
   const list = [...peers.values()].sort((a, b) => a.name.localeCompare(b.name));
   $("hint").classList.toggle("hidden", list.length > 0);
   document.body.classList.toggle("has-peers", list.length > 0);
-  for (const p of list) {
-    const el = document.createElement("div"); el.className = "peer"; el.dataset.id = p.id;
-    el.innerHTML = '<span class="tag"></span><div class="avatar"></div><b></b><div class="st"></div><div class="drop">Tap or drop files here</div><button class="tbtn">Send text</button>';
+  const keep = new Set(list.map(p => p.id));
+  for (const [id, el] of peerEls) if (!keep.has(id)) { el.remove(); peerEls.delete(id); }
+  list.forEach((p, i) => {
+    let el = peerEls.get(p.id);
+    if (!el) {
+      el = document.createElement("div"); el.className = "peer"; el.dataset.id = p.id; el.style.setProperty("--d", (i * 0.7 % 3).toFixed(1) + "s");
+      el.innerHTML = '<div class="pi"><div class="tag"></div><div class="av"><div class="avi"></div></div><b></b><div class="st"></div></div><button class="tbtn" title="Send text" aria-label="Send text"></button><span class="ok"></span>';
+      el.querySelector(".avi").style.setProperty("--g", gradFor(p.id)); el.style.setProperty("--g", gradFor(p.id));
+      el.querySelector(".tbtn").innerHTML = SVG.chat; el.querySelector(".ok").innerHTML = SVG.check;
+      el.onclick = e => { if (e.target.closest(".tbtn")) return; pickFor = el._p; $("picker").value = ""; $("picker").click(); };
+      el.querySelector(".tbtn").onclick = e => { e.stopPropagation(); const q = el._p; textFor = q; $("textTitle").textContent = "Send text to " + q.name; $("textIn").value = ""; $("textModal").classList.add("open"); setTimeout(() => $("textIn").focus(), 50); };
+      el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("drag"); });
+      el.addEventListener("dragleave", () => el.classList.remove("drag"));
+      el.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); el.classList.remove("drag"); $("veil").classList.remove("on"); sendMany(el._p, e.dataTransfer.files); });
+      $("peers").appendChild(el); peerEls.set(p.id, el);
+    }
+    el._p = p;
+    el.querySelector(".avi").innerHTML = SVG[p.type] || SVG.desktop;
     el.querySelector(".tag").textContent = p.nearby ? "nearby" : "";
-    el.querySelector(".avatar").textContent = ICON[p.type] || "💻";
     el.querySelector("b").textContent = p.name;
-    const st = el.querySelector(".st"); st.textContent = p.status || (p.link && p.link.open ? "Connected" : "Ready"); if (p.status) st.classList.add("live");
-    el.onclick = e => { if (e.target.closest(".tbtn")) return; pickFor = p; $("picker").value = ""; $("picker").click(); };
-    el.querySelector(".tbtn").onclick = () => { textFor = p; $("textTitle").textContent = "Send text to " + p.name; $("textIn").value = ""; $("textModal").classList.add("open"); setTimeout(() => $("textIn").focus(), 50); };
-    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("drag"); });
-    el.addEventListener("dragleave", () => el.classList.remove("drag"));
-    el.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); el.classList.remove("drag"); $("veil").classList.remove("on"); sendMany(p, e.dataTransfer.files); });
-    box.appendChild(el);
-  }
+    const st = el.querySelector(".st"); st.textContent = p.status || (p.link && p.link.open ? "Connected" : "Ready"); st.classList.toggle("live", !!p.status);
+  });
+  layoutPeers();
 }
+addEventListener("resize", layoutPeers);
 function sendMany(peer, files){
   const arr = Array.from(files || []); if (!arr.length) return;
   const l = linkFor(peer); for (const f of arr) l.sendFile(f);
@@ -407,7 +472,7 @@ window.addEventListener("paste", e => {
 });
 
 /* me */
-function renderMe(){ $("meName").textContent = me.name; $("meIcon").textContent = ICON[me.type] || "💻"; }
+function renderMe(){ $("meName").textContent = me.name; $("meIcon").innerHTML = SVG[me.type] || SVG.desktop; }
 $("meBtn").onclick = () => {
   const n = prompt("Name this device", me.name); if (!n || !n.trim()) return;
   me.name = n.trim().slice(0, 24); LS.set("kd_name", me.name); renderMe(); announce("hello");
@@ -421,8 +486,15 @@ function renderInvite(){
   document.querySelectorAll(".qr").forEach(e => { e.innerHTML = svg; });
   document.querySelectorAll(".roomcode").forEach(e => { e.textContent = codeRoom; });
 }
-function openRoom(){ renderInvite(); $("nearby").checked = nearbyOn; $("roomModal").classList.add("open"); }
-$("inviteBtn").onclick = openRoom;
+function openRoom(tab){
+  renderInvite(); $("nearby").checked = nearbyOn;
+  const wide = matchMedia("(min-width:900px)").matches;
+  const scope = (wide && typeof tab === "string") ? document.querySelector(".connect") : $("roomModal");
+  if (!wide || typeof tab !== "string") $("roomModal").classList.add("open");
+  if (typeof tab === "string") { const t = scope.querySelector('[data-tab="' + tab + '"]'); if (t) t.click(); if (wide) scope.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+}
+$("createBtn").onclick = () => openRoom("share");
+$("joinBtn").onclick = () => openRoom("join");
 $("roomDone").onclick = () => $("roomModal").classList.remove("open");
 $("roomModal").addEventListener("click", e => { if (e.target.id === "roomModal") $("roomModal").classList.remove("open"); });
 function switchRoom(code){
@@ -458,7 +530,7 @@ document.querySelectorAll(".cmount").forEach(box => {
   inp.addEventListener("input", () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
   inp.addEventListener("keydown", e => { if (e.key === "Enter") joinFromInput(box); });
 });
-document.querySelectorAll(".js-more").forEach(b => { b.onclick = openRoom; });
+document.querySelectorAll(".js-more").forEach(b => { b.onclick = () => openRoom(); });
 
 $("nearby").onchange = async e => {
   nearbyOn = e.target.checked; LS.set("kd_nearby", nearbyOn ? "1" : "0");

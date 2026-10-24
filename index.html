@@ -4,54 +4,56 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kita Drop</title>
-<meta name="description" content="Send files and text between your phone, tablet and computer over your Wi-Fi. No install, no account.">
-<meta name="theme-color" content="#0b1020">
+<meta name="description" content="Send files and text between your phone, tablet and computer. No install, no account, no upload.">
+<meta name="theme-color" content="#f4f6ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f24" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kita Drop">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="drop.css?v=5">
 </head>
 <body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="wrap">
   <header>
-    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></i>Kita Drop</div>
+    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></i><span>Kita Drop</span></div>
     <div class="spacer"></div>
     <span class="chip" id="net"><span class="dot"></span><span id="netTxt">Connecting…</span></span>
-    <button class="iconbtn" id="inviteBtn" title="Invite another device" aria-label="Invite">＋</button>
+    <button class="hbtn" id="createBtn" title="Create room" aria-label="Create room"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Create room</span></button>
+    <button class="hbtn ghost" id="joinBtn" title="Join room" aria-label="Join room"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Join room</span></button>
   </header>
 
   <div class="layout">
   <div class="col">
-  <section class="radar" id="radar">
-    <div class="rings"><i></i><i></i><i></i></div>
-    <div class="me" id="meBtn" role="button" tabindex="0" title="Tap to rename this device">
-      <div class="avatar" id="meIcon">💻</div>
-      <div class="meName" id="meName">—</div>
-      <div class="meSub">This device · tap to rename</div>
-    </div>
-  </section>
+    <section class="stage" id="stage">
+      <div class="rings"><i></i><i></i><i></i><i></i></div>
+      <div class="me" id="meBtn" role="button" tabindex="0" title="Tap to rename this device">
+        <div class="av"><div class="avi" id="meIcon"></div></div>
+        <div class="meName" id="meName">—</div>
+        <div class="meSub">You · tap to rename</div>
+      </div>
+      <div class="peers" id="peers"></div>
+    </section>
+    <p class="hint" id="hint">Open <b id="hintUrl">this page</b> on another device and scan the code, or enter the room code.</p>
 
-  <section id="peers" class="peers"></section>
-  <p class="hint" id="hint">Waiting for another device… open <b id="hintUrl">this page</b> on it and scan the code.</p>
-
-  <section class="panel hidden" id="xferPanel"><h3>Transfers</h3><div id="xfers"></div></section>
-  <section class="panel hidden" id="recvPanel"><h3>Received</h3><div id="recvs"></div></section>
+    <section class="panel hidden" id="xferPanel"><h3>Transfers</h3><div id="xfers"></div></section>
+    <section class="panel hidden" id="recvPanel"><h3>Received</h3><div id="recvs"></div></section>
   </div>
 
   <aside class="connect card">
-    <h3>Rooms</h3>
+    <h3>Room</h3>
     <div class="cmount"></div>
     <ol class="steps">
       <li><b>Open</b> <span class="u">drop.kitatool.com</span> on your other device.</li>
-      <li><b>Scan</b> the QR code, or choose <b>Join a room</b> and type the code.</li>
+      <li><b>Scan</b> the QR code, or choose <b>Join room</b> and type the code.</li>
       <li><b>Tap</b> the device that appears, then pick files or send text.</li>
     </ol>
     <button class="linkbtn js-more">Auto-find devices on my network…</button>
-    <p class="fine">🔒 Files go straight from device to device over your Wi-Fi. They are never uploaded to a server.</p>
-    <p class="fine"><a href="clips/" style="color:var(--a)">Shared clipboard? Kita Clips →</a></p>
+    <p class="fine"><svg class="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg> Files go straight from device to device. They are never uploaded to a server.</p>
+    <p class="fine"><a href="clips/">Shared clipboard? Kita Clips →</a></p>
   </aside>
   </div>
 </div>
@@ -59,8 +61,8 @@
 <input type="file" id="picker" multiple hidden>
 
 <!-- Incoming request -->
-<div class="modal" id="incoming"><div class="sheet">
-  <div class="big" id="inIcon">📥</div>
+<div class="modal" id="incoming"><div class="sheet center">
+  <div class="bigic" id="inIcon"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></div>
   <h2 id="inTitle">Incoming</h2>
   <p id="inBody" class="mute"></p>
   <div class="row2"><button class="btn ghost" id="inNo">Decline</button><button class="btn" id="inYes">Accept</button></div>
@@ -73,7 +75,7 @@
   <div class="row2"><button class="btn ghost" id="textCancel">Cancel</button><button class="btn" id="textSend">Send</button></div>
 </div></div>
 
-<!-- Invite / room -->
+<!-- Rooms -->
 <div class="modal" id="roomModal"><div class="sheet">
   <h2>Rooms</h2>
   <p class="mute">Create a room and share its QR code or code, or join someone else's room.</p>
@@ -98,10 +100,10 @@
 </template>
 
 <div class="toast" id="toast"></div>
-<div class="dropveil" id="veil">Drop files on a device</div>
+<div class="dropveil" id="veil"><div>Drop files on a device</div></div>
 
 <script src="vendor/mqtt.min.js?v=4"></script>
 <script src="vendor/qrcode.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
