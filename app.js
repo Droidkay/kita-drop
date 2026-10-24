@@ -13,6 +13,7 @@ const qs = new URLSearchParams(location.search);
 const BROKERS = qs.get("broker") ? [qs.get("broker")] :
   ["wss://broker.emqx.io:8084/mqtt", "wss://broker.hivemq.com:8884/mqtt", "wss://test.mosquitto.org:8081"];
 const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }] };
+const DANGEROUS = /\.(exe|msi|bat|cmd|com|scr|dll|js|jse|vbs|vbe|ps1|jar|apk|dmg|pkg|lnk|reg|hta|wsf|sh)$/i;
 const MAX_MEM = 1.2 * 1024 * 1024 * 1024;     // largest file we'll hold in memory when we can't stream to disk
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const NS = "kd1";
@@ -254,7 +255,8 @@ class Link {
       }
       this.sendCtl({ k: "end", id });
       x.state("Finishing…");
-      await this.waitFor("done:" + id, 600000);
+      const fin = await this.waitFor("done:" + id, 600000);
+      if (fin && fin.error) throw new Error(fin.error);
       x.complete("Sent");
     } catch (e) {
       try { if (this.open && x.id && e.message === "Cancelled") this.sendCtl({ k: "cancel", id: x.id }); } catch(_){}
@@ -338,8 +340,10 @@ function nextAsk(){
   asking = true;
   const { link, m } = item, peer = link.peer, size = +m.size || 0;
   notify(peer.name + " wants to send you a file", m.name + " · " + bytes(size), "kd-offer");
-  const tooBig = !window.showSaveFilePicker && size > MAX_MEM;
-  if (tooBig) { link.sendCtl({ k: "reject", id: m.id, reason: "Too big for this device's browser. Use Chrome or Edge on a computer to receive it." }); asking = false; nextAsk(); return; }
+  const risky = DANGEROUS.test(m.name || "");
+  const useDisk = !!window.showSaveFilePicker && !risky;
+  const tooBig = !useDisk && size > MAX_MEM;
+  if (tooBig) { link.sendCtl({ k: "reject", id: m.id, reason: risky ? "Executable files this large can't be received in the browser. Zip it first." : "Too big for this device's browser. Use Chrome or Edge on a computer to receive it." }); asking = false; nextAsk(); return; }
   $("inTitle").textContent = peer.name + " wants to send you a file";
   $("inBody").textContent = m.name + " · " + bytes(size);
   $("incoming").classList.add("open");
@@ -348,9 +352,13 @@ function nextAsk(){
   $("inYes").onclick = async () => {
     // must start the save dialog inside this click so the browser allows it
     let handle = null;
-    if (window.showSaveFilePicker) {
+    if (useDisk) {
       try { handle = await window.showSaveFilePicker({ suggestedName: m.name }); }
-      catch (e) { link.sendCtl({ k: "reject", id: m.id, reason: "Declined" }); done(); return; }
+      catch (e) {
+        if (e && e.name === "AbortError") { link.sendCtl({ k: "reject", id: m.id, reason: "Declined" }); done(); return; }
+        handle = null;   // picker unavailable for this file: fall back to a normal browser download
+        if (size > MAX_MEM) { link.sendCtl({ k: "reject", id: m.id, reason: "Couldn't open a save dialog for this file" }); done(); return; }
+      }
     }
     done();
     startReceive(link, m, handle);
@@ -378,7 +386,7 @@ async function startReceive(link, m, handle){
           const a = document.createElement("a"); a.href = url; a.download = m.name; document.body.appendChild(a); a.click(); a.remove();
         }
         link.sendCtl({ k: "done", id: m.id });
-      } catch (e) { x.fail("Couldn't save the file"); }
+      } catch (e) { const why = (e && (e.name + (e.message ? ": " + e.message : ""))) || "unknown error"; x.fail("Couldn't save the file (" + why + ")"); try { link.sendCtl({ k: "done", id: m.id, error: "The receiver couldn't save the file" }); } catch(_){} }
       link.inc = null; setStatus(link.peer, "");
     },
     fail(msg){ try { writer && writer.abort(); } catch(e){} x.fail(msg); link.inc = null; setStatus(link.peer, ""); }
